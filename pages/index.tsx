@@ -1,11 +1,49 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import { Inter } from '@next/font/google'
-import styles from '@/styles/Home.module.css'
-
-const inter = Inter({ subsets: ['latin'] })
+import Head from "next/head";
+import Router from "next/router";
+import { FormEvent, useRef } from "react";
 
 export default function Home() {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLInputElement>(null);
+
+  const audioData = {
+    audio_url: audioRef.current?.files?.[0],
+    language: "english",
+    language_behaviour: "automatic single language",
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    const urlRegex =
+      /^(https?|ftp):\/\/(www\.)?[a-zA-Z0-9]+(\.[a-zA-Z]+)+([/?#]\S*)?$/;
+    if (urlRegex.test(inputRef.current?.value as string)) {
+      Router.push(`/api/download?url=${inputRef.current?.value}`);
+      return;
+    }
+    alert("Invalid URL");
+  };
+
+  const handleAudioToText = async () => {
+    const formData = new FormData();
+    formData.append("audio_url", audioRef.current?.files?.[0]);
+    formData.append("language", "english");
+    formData.append("language_behaviour", "automatic single language");
+    try {
+      await fetch("https://api.gladia.io/audio/text/audio-transcription/", {
+        mode: "no-cors",
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "x-gladia-key": "d183cbaa-483d-49a6-ac66-27f348b9517f",
+          "Content-Type": "multipart/form-data",
+        },
+        body: formData,
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   return (
     <>
       <Head>
@@ -14,110 +52,37 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className={styles.main}>
-        <div className={styles.description}>
-          <p>
-            Get started by editing&nbsp;
-            <code className={styles.code}>pages/index.tsx</code>
-          </p>
-          <div>
-            <a
-              href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              By{' '}
-              <Image
-                src="/vercel.svg"
-                alt="Vercel Logo"
-                className={styles.vercelLogo}
-                width={100}
-                height={24}
-                priority
-              />
-            </a>
-          </div>
-        </div>
-
-        <div className={styles.center}>
-          <Image
-            className={styles.logo}
-            src="/next.svg"
-            alt="Next.js Logo"
-            width={180}
-            height={37}
-            priority
+      <main className={"w-full flex flex-col gap-6 items-center"}>
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-4 mt-4 w-full max-w-md"
+        >
+          <input
+            ref={inputRef}
+            type="text"
+            name="url"
+            className="border py-2 px-6 rounded-md"
+            placeholder="www.YouTubeVideo.com"
           />
-          <div className={styles.thirteen}>
-            <Image
-              src="/thirteen.svg"
-              alt="13"
-              width={40}
-              height={31}
-              priority
-            />
-          </div>
-        </div>
-
-        <div className={styles.grid}>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Docs <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Find in-depth information about Next.js features and&nbsp;API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Learn <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Learn about Next.js in an interactive course with&nbsp;quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Templates <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Discover and deploy boilerplate example Next.js&nbsp;projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Deploy <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Instantly deploy your Next.js site to a shareable URL
-              with&nbsp;Vercel.
-            </p>
-          </a>
-        </div>
+          <input
+            type={"file"}
+            name={"audio"}
+            className={"border py-2 px-6 rounded-md"}
+            ref={audioRef}
+          />
+          <button className={"bg-red-800 text-red-200 px-10 py-2 rounded-md"}>
+            Download
+          </button>
+        </form>
+        <button
+          onClick={handleAudioToText}
+          className={
+            "bg-red-800 text-red-200 px-10 py-2 rounded-md w-full max-w-md"
+          }
+        >
+          Audio to Text
+        </button>
       </main>
     </>
-  )
+  );
 }
